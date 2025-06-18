@@ -186,11 +186,18 @@ jobs:
           cp plugin/smartdns-ui/target/${{ matrix.CARGO_TARGET }}/release/libsmartdns_ui.so /tmp/artifacts
           chmod +x /tmp/artifacts/*
 
-          mkdir -p /tmp/artifacts/libs
-          ldd /tmp/artifacts/smartdns | awk '/=> \// { print $3 }' | xargs -I {} cp -v {} /tmp/artifacts/libs/
-          ldd /tmp/artifacts/libsmartdns_ui.so | awk '/=> \// { print $3 }' | xargs -I {} cp -v {} /tmp/artifacts/libs/
-          
           set -x
+
+          mkdir -p /tmp/artifacts/libs
+          ldd /tmp/artifacts/smartdns /tmp/artifacts/libsmartdns_ui.so | \
+            awk '
+              $1 ~ /^\// { print $1 }              # like /lib64/ld-linux-x86-64.so.2
+              $3 ~ /^\// { print $3 }              # like libm.so.6 => /lib/xxx/libm.so.6
+            ' | sort -u | xargs -I {} cp -v {} /tmp/artifacts/libs/ || true
+            
+          # ldd /tmp/artifacts/smartdns | awk '/=> \// { print $3 }' | xargs -I {} cp -v {} /tmp/artifacts/libs/
+          # ldd /tmp/artifacts/libsmartdns_ui.so | awk '/=> \// { print $3 }' | xargs -I {} cp -v {} /tmp/artifacts/libs/
+          
           file /tmp/artifacts/smartdns || true
           file /tmp/artifacts/libsmartdns_ui.so || true
 
